@@ -1,1 +1,0 @@
-# File from paper that is used for evaluation purposes
