@@ -43,3 +43,18 @@ Why: XL-LEXEME marks the word at `start:end`, so a wrong pointer gives a wrong v
   - 57 fully identical rows, e.g. `French`: "To French a Leg of Mutton." (1810) appears twice.
   - 213 sentences reused across years with the same sense, e.g. "The Anglo-Roman Church." in 1810, 1870, 1890, 1910, 1930. Harmless.
   - 29 sentences labeled with **two different senses**, e.g. `bot`: "Bots." is both `bot_nn01-16381146` and `bot_nn01-16381258`. No context to tell them apart, so no model can get these right.
+
+## Split (`src/split.py`)
+
+- Split by **word**, not sentence: 80 / 10 / 10 → 1,874 train, 234 dev, 235 test words (seed 42).
+- Saved to `splits/word_split.csv` and committed, so everyone uses the same split.
+- **train**: pick settings (cutoff, smoothing). **dev**: compare ideas (e.g. extra cleaning). **test**: final number only.
+
+## Subtask 2 (`src/subtask2.py`)
+
+Skeleton only, decisions pending. See the DECISION comments in `src/subtask2.py` (12 open decisions).
+
+Input: `cache/embeddings.npy` + `cache/embeddings_sentences.parquet` (same row order), from the encoding step.
+
+Agreed so far:
+- Each sense is represented by a prototype: the average XL-LEXEME vector of k example sentences (Cassotti & Tahmasebi, 2025; Snell et al., 2017).
