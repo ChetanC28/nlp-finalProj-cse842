@@ -58,3 +58,13 @@ Input: `cache/embeddings.npy` + `cache/embeddings_sentences.parquet` (same row o
 
 Agreed so far:
 - Each sense is represented by a prototype: the average XL-LEXEME vector of k example sentences (Cassotti & Tahmasebi, 2025; Snell et al., 2017).
+
+## Basic model (`src/baseline.py`)
+
+Simplest working version, no year information. Used to check the pipeline works end to end.
+
+- **train:** for each (word, sense) in the train words, average k example vectors → reference; score the word's other sentences by cosine similarity; pick the one cutoff with the best F1. Saved to `models/baseline.json`.
+- **predict:** given example sentences of a sense + new sentences (text, start, end), encode with XL-LEXEME and answer yes/no.
+- Placeholders (not decided yet): k = 3; cutoffs tried 0.00–1.00 in steps of 0.01.
+
+Test run on 60 sample words (real XL-LEXEME vectors): cutoff 0.73, train F1 0.51, dev F1 0.55. Encoding speed on a MacBook (MPS): ~93 sentences/s → full dataset ≈ 2 hours.
