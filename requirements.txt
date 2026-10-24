@@ -1,0 +1,13 @@
+# Pinned so every team member gets identical versions. Install with: ./setup.sh
+torch==2.5.1
+transformers==4.44.2
+sentence-transformers==3.1.0
+numpy==1.26.4
+pandas==2.2.3
+pyarrow==17.0.0
+scikit-learn==1.5.2
+scipy==1.14.1
+matplotlib==3.9.2
+tqdm==4.66.5
+setuptools==75.1.0
+# XL-LEXEME (WordTransformer) is installed separately by setup.sh, pinned to a commit

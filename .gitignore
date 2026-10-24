@@ -2,3 +2,7 @@
 
 # Saponara et al. (2026) synthetic dataset — too large for git; download from Zenodo
 NLP Dataset/
+
+# Python virtual environment
+.venv/
+__pycache__/
