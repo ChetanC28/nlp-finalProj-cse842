@@ -6,3 +6,6 @@ NLP Dataset/
 # Python virtual environment
 .venv/
 __pycache__/
+
+# Generated files (sentences table, embeddings)
+cache/
