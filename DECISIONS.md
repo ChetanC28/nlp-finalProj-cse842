@@ -50,6 +50,15 @@ Why: XL-LEXEME marks the word at `start:end`, so a wrong pointer gives a wrong v
 - Saved to `splits/word_split.csv` and committed, so everyone uses the same split.
 - **train**: pick settings (cutoff, smoothing). **dev**: compare ideas (e.g. extra cleaning). **test**: final number only.
 
+## Subtask 1a baseline (`src/subtask1.py`)
+
+Unsupervised sense induction using Agglomerative Hierarchical Clustering (AHC) with average linkage and cosine distance (threshold = 0.35). Evaluated using BCubed F1 against gold senses.
+
+- **Baseline test (5 dev words, 1,437 sentences)**: Macro BCubed F1 = 0.617 (Precision = 0.637, Recall = 0.663).
+- **Ideas to explore beyond baseline**:
+  - **Temporal-aware clustering**: Incorporate publication periods as a prior or constraint so senses evolve chronologically rather than pooling all years together.
+  - **Dynamic thresholds**: Instead of a fixed 0.35 threshold for all words, calibrate thresholds per word using silhouette analysis or density estimation.
+
 ## Subtask 2 (`src/subtask2.py`)
 
 Skeleton only, decisions pending. See the DECISION comments in `src/subtask2.py` (12 open decisions).
