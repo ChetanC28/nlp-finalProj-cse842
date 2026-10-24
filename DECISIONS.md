@@ -15,7 +15,8 @@ What we did, why, and what we noticed but didn't change. Update as we go.
 
 **Noticed, not changed:**
 - Sentence counts are roughly equal per period (~10 per sense), **not** proportional to the true sense frequency in `metadata/`. So trajectories built from our predictions mostly show whether a sense exists in a period, not how common it is.
-- 2,346 files but 2,344 unique words (2 words appear twice).
+- 2,346 files but 2,344 words with sentences: `honk.jsonl` and `pinheaded.jsonl` are empty (0 sentences).
+- `Jack` (27 senses, proper noun) and `jack` (12 senses) are separate words in separate files; kept separate.
 
 ## Loading (`src/load_data.py`)
 
@@ -38,4 +39,7 @@ Why: XL-LEXEME marks the word at `start:end`, so a wrong pointer gives a wrong v
 **Noticed, not changed:**
 - Some real spelling variants get dropped because their first 3 letters differ (`icily` → "Icy", `eye` → "Eying"). Small number; accepted.
 - When fixing, we take the first match in the sentence, which is occasionally wrong (`go` matched "got" instead of "gō").
-- Duplicates: 57 fully identical rows, 346 repeated sentences for the same word. Not removed yet.
+- Duplicates (not removed yet):
+  - 57 fully identical rows, e.g. `French`: "To French a Leg of Mutton." (1810) appears twice.
+  - 213 sentences reused across years with the same sense, e.g. "The Anglo-Roman Church." in 1810, 1870, 1890, 1910, 1930. Harmless.
+  - 29 sentences labeled with **two different senses**, e.g. `bot`: "Bots." is both `bot_nn01-16381146` and `bot_nn01-16381258`. No context to tell them apart, so no model can get these right.
