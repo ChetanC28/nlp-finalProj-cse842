@@ -68,12 +68,49 @@ Input: `cache/embeddings.npy` + `cache/embeddings_sentences.parquet` (same row o
 Agreed so far:
 - Each sense is represented by a prototype: the average XL-LEXEME vector of k example sentences (Cassotti & Tahmasebi, 2025; Snell et al., 2017).
 
-## Basic model (`src/baseline.py`)
+## Subtask 2 baseline (`src/baseline.py`)
 
-Simplest working version, no year information. Used to check the pipeline works end to end.
+Simplest working version, no year information. This is the number our temporal method has to beat.
 
 - **train:** for each (word, sense) in the train words, average k example vectors → reference; score the word's other sentences by cosine similarity; pick the one cutoff with the best F1. Saved to `models/baseline.json`.
+- **evaluate:** same on dev / test words with the learned cutoff. Truth labels come from `sense_id`: YES if the sentence's sense is the target sense, NO otherwise.
 - **predict:** given example sentences of a sense + new sentences (text, start, end), encode with XL-LEXEME and answer yes/no.
 - Placeholders (not decided yet): k = 3; cutoffs tried 0.00–1.00 in steps of 0.01.
+- Encoding speed on a MacBook (MPS): ~93 sentences/s → full dataset ≈ 2 hours.
 
-Test run on 60 sample words (real XL-LEXEME vectors): cutoff 0.73, train F1 0.51, dev F1 0.55. Encoding speed on a MacBook (MPS): ~93 sentences/s → full dataset ≈ 2 hours.
+**Results (full dataset, real XL-LEXEME vectors, cutoff = 0.74):**
+
+| | F1 | Precision | Recall | Accuracy |
+|---|---|---|---|---|
+| train | 0.537 | 0.496 | 0.806 | 0.685 |
+| dev | 0.528 | 0.482 | 0.806 | 0.673 |
+| test | **0.536** | 0.498 | 0.790 | 0.680 |
+
+**What it tells us:**
+- F1 ≈ 0.53: the model finds a real signal but is far from perfect.
+- High recall, low precision: it finds ~80% of the target sense's sentences, but about half its YES answers are wrong (says yes too often). Likely cause: senses of the same word that are close in meaning get similar scores (e.g. `adversarial` general vs. legal).
+- Train ≈ dev ≈ test: only one setting (the cutoff), so no overfitting; the number carries over to unseen words.
+- Our temporal method targets exactly these borderline false YES answers, so if it works, **precision should go up**.
+
+**Coverage:** every dev/test word and sentence takes part, but senses with ≤ k sentences are never the target (128 of 1,239 dev senses, 123 of 1,187 test senses ≈ 10%). These are the rarest senses. Their sentences are still scored as NO cases for other senses. The k example sentences of each case are not scored.
+
+**Noticed, not changed:**
+- Accuracy is misleading here: most answers are NO, so accuracy looks better than the model is. Report F1 as the main metric.
+- Cleaning dropped 23,060 rows on a teammate's Linux machine vs 23,055 on Mac (5 rows, same code). Doesn't affect results, but check everyone has the same dataset version.
+
+## For the report
+
+Explanations to include:
+- Gold labels are the senses each sentence was **generated** to exemplify (Saponara et al., 2026), not human-checked, so some label noise is expected (e.g. `bust` → "burst"). This is why we report improvement over the baseline rather than absolute scores (proposal §4.1).
+- Truth for Subtask 2 is built from `sense_id`: target sense = YES, any other sense of the same word = NO.
+- Split by word, so test words are never seen during tuning.
+- Senses with ≤ k sentences were not evaluated as targets (~10% of senses, the rarest ones).
+- Data cleaning: 3.4% of sentences dropped, 1.2% fixed (see Cleaning).
+
+Open questions to answer (and say in the report):
+- What k (number of example sentences) and why? Trade-off: larger k = better reference but more rare senses skipped.
+- Does the year information raise precision without lowering recall?
+- Does it help or hurt on stable vs. newly appearing vs. rare senses? (promised in the proposal)
+- Since sentence counts per period are roughly equal (see Data), can trajectories from our predictions show how common a sense is, or only whether it exists?
+- Do the 29 sentences with two different labels (e.g. "Bots.") noticeably lower the score?
+- Is one random pick of example sentences stable, or do scores change with a different pick?
