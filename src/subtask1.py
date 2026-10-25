@@ -53,26 +53,34 @@ def evaluate_bcubed(true_senses, predicted_clusters):
     return precision, recall, f1_score
 
 
-def period_distributions(clusters, years, periods):
+def period_distributions(clusters, years, periods=None):
     """
     Find the sense distribution P_t for each period.
+    Only includes periods that contain usages to avoid zero division.
     """
     clusters = np.asarray(clusters)
     years = np.asarray(years)
     unique_clusters = np.unique(clusters)
 
-    distributions = np.zeros((len(periods), len(unique_clusters)))
+    if periods is None:
+        periods = np.sort(np.unique(years))
 
-    for period_idx, period_year in enumerate(periods):
+    distributions = []
+    for period_year in periods:
         in_period = (years == period_year)
         period_clusters = clusters[in_period]
         total_in_period = len(period_clusters)
 
-        for cluster_idx, cluster_id in enumerate(unique_clusters):
-            count = np.sum(period_clusters == cluster_id)
-            distributions[period_idx, cluster_idx] = count / total_in_period
+        if total_in_period > 0:
+            dist = np.zeros(len(unique_clusters))
+            for cluster_idx, cluster_id in enumerate(unique_clusters):
+                dist[cluster_idx] = np.sum(period_clusters == cluster_id) / total_in_period
+            distributions.append(dist)
 
-    return distributions
+    if len(distributions) == 0:
+        return np.zeros((0, len(unique_clusters)))
+
+    return np.array(distributions)
 
 
 def temporal_change_jsd(distributions):
@@ -80,19 +88,32 @@ def temporal_change_jsd(distributions):
     Measure semantic change across consecutive periods using Jensen-Shannon Divergence.
     Sum of step-by-step JSDs across adjacent periods, or average.
     """
+    distributions = np.asarray(distributions)
+    if len(distributions) <= 1:
+        return 0.0
+
     total_change = 0.0
     for t in range(len(distributions) - 1):
-        total_change += jensenshannon(distributions[t], distributions[t + 1], base=2) ** 2
-    return float(total_change)
+        jsd = jensenshannon(distributions[t], distributions[t + 1], base=2)
+        if not np.isnan(jsd):
+            total_change += float(jsd ** 2)
 
+    return float(total_change)
 
 
 def evaluate_spearman(predicted_changes, true_changes):
     """
     Compare predicted semantic change rankings with true rankings using Spearman's rho.
     """
-    rho, _ = spearmanr(predicted_changes, true_changes)
-    return float(rho)
+    predicted_changes = np.asarray(predicted_changes)
+    true_changes = np.asarray(true_changes)
+
+    valid = ~(np.isnan(predicted_changes) | np.isnan(true_changes))
+    if np.sum(valid) < 2:
+        return 0.0
+
+    rho, _ = spearmanr(predicted_changes[valid], true_changes[valid])
+    return float(0.0 if np.isnan(rho) else rho)
 
 
 def run_subtask1(df, vectors, split):
