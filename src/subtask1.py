@@ -6,6 +6,10 @@ import numpy as np
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import spearmanr
 from sklearn.cluster import AgglomerativeClustering
+import os
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 PERIODS = [1810, 1830, 1850, 1870, 1890, 1910, 1930, 1950, 1970, 1990]
 
@@ -116,9 +120,47 @@ def evaluate_spearman(predicted_changes, true_changes):
     return float(0.0 if np.isnan(rho) else rho)
 
 
-def run_subtask1(df, vectors, split):
+def plot_subtask1_results(bcubed_f1_scores, true_changes, predicted_changes, output_dir="plots"):
     """
-    Run Subtask 1a and 1b across words and report macro scores.
+    Generate and save evaluation plots for Subtask 1a and Subtask 1b.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+
+    true_changes = np.asarray(true_changes)
+    predicted_changes = np.asarray(predicted_changes)
+    bcubed_f1_scores = np.asarray(bcubed_f1_scores)
+
+    # 1. Subtask 1a
+    if len(bcubed_f1_scores) > 0:
+        macro_f1 = float(np.mean(bcubed_f1_scores))
+        plt.figure()
+        plt.hist(bcubed_f1_scores)
+        plt.axvline(macro_f1, linestyle="--", label=f"macro_f1 ({macro_f1:.3f})")
+        plt.xlabel("bcubed_f1_scores")
+        plt.ylabel("count")
+        plt.title("Subtask 1a: bcubed_f1_scores")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, "subtask1a_bcubed_distribution.png"))
+        plt.close()
+
+    # 2. Subtask 1b
+    valid = ~(np.isnan(true_changes) | np.isnan(predicted_changes))
+    if np.sum(valid) >= 2:
+        rho, _ = spearmanr(predicted_changes[valid], true_changes[valid])
+        plt.figure()
+        plt.scatter(true_changes[valid], predicted_changes[valid])
+        plt.xlabel("true_changes")
+        plt.ylabel("predicted_changes")
+        plt.title(f"Subtask 1b: predicted_changes vs true_changes (rho = {rho:.3f})")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, "subtask1b_change_correlation.png"))
+        plt.close()
+
+
+def run_subtask1(df, vectors, split, save_plots=True):
+    """
+    Run Subtask 1a and 1b across words, report macro scores, and optionally save plots.
     """
     dev_words = split.loc[split["split"] == "dev", "lemma"].values
     words = [w for w in df["lemma"].unique() if w in dev_words]
@@ -138,8 +180,9 @@ def run_subtask1(df, vectors, split):
         _, _, f1 = evaluate_bcubed(word_df["sense_id"].values, clusters)
         bcubed_f1_scores.append(f1)
 
-        pred_dists = period_distributions(clusters, word_df["year"].values, PERIODS)
-        true_dists = period_distributions(word_df["sense_id"].values, word_df["year"].values, PERIODS)
+        obs_years = np.sort(word_df["year"].unique())
+        pred_dists = period_distributions(clusters, word_df["year"].values, obs_years)
+        true_dists = period_distributions(word_df["sense_id"].values, word_df["year"].values, obs_years)
 
         predicted_changes.append(temporal_change_jsd(pred_dists))
         true_changes.append(temporal_change_jsd(true_dists))
@@ -147,8 +190,17 @@ def run_subtask1(df, vectors, split):
     macro_f1 = float(np.mean(bcubed_f1_scores))
     rho = evaluate_spearman(predicted_changes, true_changes)
 
-    print(f"1a {macro_f1:.3f}")
-    print(f"1b {rho:.3f}")
+    print(f"1a {macro_f1}")
+    print(f"1b {rho}")
+
+    if save_plots:
+        plot_subtask1_results(
+            bcubed_f1_scores,
+            true_changes,
+            predicted_changes,
+        )
+        print("Saved plots to plots/")
+
     return macro_f1, rho
 
 
