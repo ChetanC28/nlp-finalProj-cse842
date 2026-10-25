@@ -50,14 +50,30 @@ Why: XL-LEXEME marks the word at `start:end`, so a wrong pointer gives a wrong v
 - Saved to `splits/word_split.csv` and committed, so everyone uses the same split.
 - **train**: pick settings (cutoff, smoothing). **dev**: compare ideas (e.g. extra cleaning). **test**: final number only.
 
-## Subtask 1a baseline (`src/subtask1.py`)
+## Subtask 1 baseline (`src/subtask1.py`)
 
-Unsupervised sense induction using Agglomerative Hierarchical Clustering (AHC) with average linkage and cosine distance (threshold = 0.35). Evaluated using BCubed F1 against gold senses.
+Unsupervised sense induction (1a) and diachronic sense dynamics tracking (1b).
 
-- **Baseline test (5 dev words, 1,437 sentences)**: Macro BCubed F1 = 0.617 (Precision = 0.637, Recall = 0.663).
-- **Ideas to explore beyond baseline**:
-  - **Temporal-aware clustering**: Incorporate publication periods as a prior or constraint so senses evolve chronologically rather than pooling all years together.
-  - **Dynamic thresholds**: Instead of a fixed 0.35 threshold for all words, calibrate thresholds per word using silhouette analysis or density estimation.
+- **Subtask 1a (Diachronic Sense Assignment)**: Agglomerative Hierarchical Clustering (AHC) with average linkage and cosine distance (threshold = 0.35). Evaluated using Macro BCubed F1 against gold senses.
+- **Subtask 1b (Sense Dynamics)**: Step-by-step Jensen-Shannon Divergence (JSD) across consecutive time periods. Evaluated using Spearman's rank correlation ($\rho$) against gold semantic change rankings.
+
+**Results (full dataset, 234 dev words, real XL-LEXEME vectors):**
+
+| Track | Metric | Score | Details |
+|---|---|---|---|
+| **Subtask 1a** | Macro BCubed F1 | **0.627** | Unsupervised sense clustering across all periods |
+| **Subtask 1b** | Spearman $\rho$ | **0.400** | Rank correlation of temporal JSD change scores |
+
+**Decisions & Edge Cases Handled:**
+- **Missing Periods**: 35 dev words (e.g. *boast*, *downsize*) do not appear in all 10 periods. Sense distributions and consecutive JSD are computed strictly over observed periods (`total_in_period > 0`) to prevent zero-division / NaN values. Words appearing in $\le 1$ period are assigned 0.0 change.
+- **Plot Generation**: Automatically outputs two evaluation figures to `plots/`:
+  - `subtask1a_bcubed_distribution.png`: Histogram showing the distribution of BCubed F1 scores across dev words with the macro mean line.
+  - `subtask1b_change_correlation.png`: Scatter plot of `true_changes` vs. `predicted_changes` with Spearman $\rho$.
+- **Notable Observations**: Highly dynamic polysemous words (e.g. *ruck*, *hood*) with multiple evolving senses accumulated the highest change in both gold annotations and predicted clusters.
+
+**Ideas to explore beyond baseline**:
+- **Temporal-aware clustering**: Incorporate publication periods as a prior or constraint so senses evolve chronologically rather than pooling all years together.
+- **Dynamic thresholds**: Instead of a fixed 0.35 threshold for all words, calibrate thresholds per word using silhouette analysis or density estimation.
 
 ## Subtask 2 (`src/subtask2.py`)
 
