@@ -32,20 +32,7 @@ vectors = np.load("cache/embeddings.npy")
 # Step 5: Subtask 1 (unsupervised sense induction & change detection)
 run_subtask1(df, vectors, split)
 
-# Step 6: train the basic Subtask 2 model (prototype + one cutoff)
-baseline.train(df, vectors, split)
-
-
-# Step 6: try it on an unseen input
-examples = [  # known uses of the target sense ("boss" = cow)
-    ("The boss or ox when called will run to his owner.", 4, 8),
-    ("Call the boss in from the field before dark.", 9, 13),
-    ("The farmer milked the boss every morning.", 22, 26),
-]
-sentences = [  # new uses to label
-    ("The boss wandered into the barn to be milked.", 4, 8),
-    ("My boss gave me a raise last week.", 3, 7),
-    ("The shield had a metal boss in the center.", 23, 27),
-]
-for text, score, answer in baseline.predict(examples, sentences):
-    print(f"{'YES' if answer else 'NO ':3}  {score}  {text}")
+# Step 6: Subtask 2 basic model (prototype + one cutoff): train on train words, score on dev and test
+cutoff = baseline.train(df, vectors, split)
+baseline.evaluate(df, vectors, split, "dev", cutoff)
+baseline.evaluate(df, vectors, split, "test", cutoff)

@@ -1,13 +1,14 @@
 # Most basic Subtask 2 model: prototype + one fixed cutoff. No year information.
 #
-# train():   find the cutoff that gives the best F1 on the train words, save it.
-# predict(): for a new input (example sentences of a sense + new sentences), say yes/no.
+# train():    find the cutoff that gives the best F1 on the train words, save it.
+# evaluate(): score the model on a set of words (dev or test).
+# predict():  for a new input (example sentences of a sense + new sentences), say yes/no.
 import json
 import os
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 K = 3  # PLACEHOLDER: number of example sentences per sense (decision 1, not decided yet)
 MODEL_FILE = "models/baseline.json"
@@ -18,7 +19,8 @@ def normalize(v):
 
 
 def make_cases(df, vectors, words, seed=0):
-    # one case per (word, sense): scores of the word's other sentences + true yes/no
+    # one case per (word, sense): scores of the word's other sentences + truth labels.
+    # truth: YES if the sentence's sense_id is the target sense, NO otherwise.
     rng = np.random.default_rng(seed)
     cases = []
     for word in words:
@@ -39,27 +41,41 @@ def make_cases(df, vectors, words, seed=0):
     return cases
 
 
-def f1(cases, cutoff):
-    # F1 per case, averaged per word, then across words
-    rows = [{"word": c["word"], "f1": f1_score(c["labels"], c["scores"] >= cutoff, zero_division=0)} for c in cases]
-    return pd.DataFrame(rows).groupby("word")["f1"].mean().mean()
+def metrics(cases, cutoff):
+    # each metric per case, averaged per word, then across words
+    rows = []
+    for c in cases:
+        pred = c["scores"] >= cutoff
+        rows.append({
+            "word": c["word"],
+            "f1": f1_score(c["labels"], pred, zero_division=0),
+            "precision": precision_score(c["labels"], pred, zero_division=0),
+            "recall": recall_score(c["labels"], pred, zero_division=0),
+            "accuracy": accuracy_score(c["labels"], pred),
+        })
+    return pd.DataFrame(rows).groupby("word").mean().mean().round(3).to_dict()
 
 
 def train(df, vectors, split):
     vectors = normalize(vectors.astype(np.float32))
     train_words = split.loc[split["split"] == "train", "lemma"]
-    dev_words = split.loc[split["split"] == "dev", "lemma"]
 
-    train_cases = make_cases(df, vectors, train_words)
+    cases = make_cases(df, vectors, train_words)
     cutoffs = np.round(np.arange(0, 1.01, 0.01), 2)
-    best = max(cutoffs, key=lambda c: f1(train_cases, c))
-
-    dev_f1 = f1(make_cases(df, vectors, dev_words), best)
-    print(f"best cutoff (train): {best} | train F1 = {f1(train_cases, best):.3f} | dev F1 = {dev_f1:.3f}")
+    best = max(cutoffs, key=lambda c: metrics(cases, c)["f1"])
+    print(f"best cutoff (train): {best} | train: {metrics(cases, best)}")
 
     os.makedirs("models", exist_ok=True)
     json.dump({"cutoff": float(best), "k": K}, open(MODEL_FILE, "w"))
     return best
+
+
+def evaluate(df, vectors, split, name, cutoff):
+    vectors = normalize(vectors.astype(np.float32))
+    words = split.loc[split["split"] == name, "lemma"]
+    result = metrics(make_cases(df, vectors, words), cutoff)
+    print(f"{name}: {result}")
+    return result
 
 
 def predict(examples, sentences):
