@@ -95,8 +95,8 @@ Simplest working version, no year information. This is the number our temporal m
 **Coverage:** every dev/test word and sentence takes part, but senses with ≤ k sentences are never the target (128 of 1,239 dev senses, 123 of 1,187 test senses ≈ 10%). These are the rarest senses. Their sentences are still scored as NO cases for other senses. The k example sentences of each case are not scored.
 
 **Noticed, not changed:**
-- Accuracy is misleading here: most answers are NO, so accuracy looks better than the model is. Report F1 as the main metric.
-- Cleaning dropped 23,060 rows on a teammate's Linux machine vs 23,055 on Mac (5 rows, same code). Doesn't affect results, but check everyone has the same dataset version.
+-  most answers are NO, so accuracy looks better than the model is. Report F1 as the main metric.
+
 
 ## For the report
 
