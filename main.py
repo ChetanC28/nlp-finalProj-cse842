@@ -7,6 +7,7 @@ import pandas as pd
 from src.load_data import load_sentences
 from src.clean_data import clean_sentences
 from src.split import split_words
+from src.subtask1 import run_subtask1
 from src import baseline
 
 # Step 1: load the data
@@ -28,8 +29,12 @@ if not os.path.exists("cache/embeddings.npy"):
 df = pd.read_parquet("cache/embeddings_sentences.parquet")
 vectors = np.load("cache/embeddings.npy")
 
-# Step 5: train the basic Subtask 2 model (prototype + one cutoff)
+# Step 5: Subtask 1 (unsupervised sense induction & change detection)
+run_subtask1(df, vectors, split)
+
+# Step 6: train the basic Subtask 2 model (prototype + one cutoff)
 baseline.train(df, vectors, split)
+
 
 # Step 6: try it on an unseen input
 examples = [  # known uses of the target sense ("boss" = cow)

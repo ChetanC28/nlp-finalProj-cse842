@@ -96,4 +96,47 @@ def evaluate_spearman(predicted_changes, true_changes):
 
 
 def run_subtask1(df, vectors, split):
-    pass
+    """
+    Run Subtask 1a and 1b across words and report macro scores.
+    """
+    dev_words = split.loc[split["split"] == "dev", "lemma"].values
+    words = [w for w in df["lemma"].unique() if w in dev_words]
+    if len(words) == 0:
+        words = df["lemma"].unique()
+
+    bcubed_f1_scores = []
+    predicted_changes = []
+    true_changes = []
+
+    for word in words:
+        mask = (df["lemma"] == word).to_numpy()
+        word_df = df[mask].reset_index(drop=True)
+        word_vectors = vectors[mask]
+
+        clusters = induce_senses(word_vectors)
+        _, _, f1 = evaluate_bcubed(word_df["sense_id"].values, clusters)
+        bcubed_f1_scores.append(f1)
+
+        pred_dists = period_distributions(clusters, word_df["year"].values, PERIODS)
+        true_dists = period_distributions(word_df["sense_id"].values, word_df["year"].values, PERIODS)
+
+        predicted_changes.append(temporal_change_jsd(pred_dists))
+        true_changes.append(temporal_change_jsd(true_dists))
+
+    macro_f1 = float(np.mean(bcubed_f1_scores))
+    rho = evaluate_spearman(predicted_changes, true_changes)
+
+    print(f"1a {macro_f1:.3f}")
+    print(f"1b {rho:.3f}")
+    return macro_f1, rho
+
+
+if __name__ == "__main__":
+    import pandas as pd
+
+    df = pd.read_parquet("cache/embeddings_sentences.parquet")
+    vectors = np.load("cache/embeddings.npy")
+    split = pd.read_csv("splits/word_split.csv")
+
+    run_subtask1(df, vectors, split)
+
