@@ -68,20 +68,15 @@ def embed_sentences(df, model=None, batch_size=32, name="embeddings", chunk_size
     return vectors
 
 
-# Run from the repo root (after main.py has made the cache):
-#   python embed.py         embeds every sentence (hours on CPU) -> cache/embeddings.npy
-#   python embed.py 1000    embeds a random 1000 to test -> cache/embeddings_sample.npy
-# If a run stops partway, run the same command again to continue.
-if __name__ == "__main__":
-    import sys
-
+def embed_func(sample_size=None):
     import pandas as pd
     from src.clean_data import clean_sentences
 
     df = clean_sentences(pd.read_parquet("cache/sentences.parquet"))
     name = "embeddings"
-    if len(sys.argv) > 1:
-        df = df.sample(int(sys.argv[1]), random_state=0).reset_index(drop=True)
+    if sample_size is not None:
+        df = df.sample(sample_size, random_state=0).reset_index(drop=True)
         name = "embeddings_sample"
     vectors = embed_sentences(df, name=name)
     print(vectors.shape, f"vectors saved to cache/{name}.npy")
+    return vectors
