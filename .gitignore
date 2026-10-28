@@ -9,3 +9,7 @@ __pycache__/
 
 # Generated files (sentences table, embeddings)
 cache/
+/.venv-subtask1/
+/embeddings.npy
+/embeddings_sentences.parquet
+/sentences.parquet

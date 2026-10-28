@@ -1,0 +1,63 @@
+{
+  "utc_created": "2026-10-27T21:43:10.640663+00:00",
+  "source": "synthetic generated sentence sense labels (not the official SemEval scorer)",
+  "data_rows": 649060,
+  "embedding_dims": 1024,
+  "n_words": 2343,
+  "train_tuning_words": 180,
+  "seed": 42,
+  "thresholds": [
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45
+  ],
+  "strengths": [
+    0.0,
+    0.02,
+    0.05,
+    0.1,
+    0.2,
+    0.35
+  ],
+  "split_reconciliation": {
+    "words_in_embeddings": 2343,
+    "words_in_committed_split": 2343,
+    "words_in_effective_split": 2342,
+    "missing_from_embeddings": [
+      {
+        "lemma": "jock",
+        "split": "train"
+      }
+    ],
+    "without_split_assignment": [
+      "Jock"
+    ],
+    "effective_split_counts": {
+      "train": 1873,
+      "test": 235,
+      "dev": 234
+    },
+    "policy": "Keep existing assignments; exclude unavailable or unassigned words; do not regenerate splits or touch embeddings"
+  },
+  "final_test_evaluated": false,
+  "missing_period_policies": [
+    "observed(original)",
+    "adjacent(diagnostic)"
+  ],
+  "parameters": {
+    "baseline_threshold": 0.35,
+    "train_tuned_threshold": 0.45,
+    "strength_for_subtask_1a": 0.0,
+    "strength_for_subtask_1b": 0.2
+  },
+  "notes": [
+    "Original baseline reproduced at strength 0, threshold 0.35.",
+    "Temporal priors use predicted labels only, with own-example exclusion.",
+    "Both subtask metrics are evaluated; 1a and 1b may prefer different strengths.",
+    "Gold for 1b uses generated sentence annotations; metadata curves are not used.",
+    "Dataset frequencies vs metadata are NOT assumed to match or mismatch.",
+    "Do not treat diagnostic adjacent-mode as official scoring protocol."
+  ]
+}
