@@ -1,0 +1,21 @@
+{
+  "static_threshold_1a": 0.45,
+  "static_threshold_1b": 0.45,
+  "selected_1a": {
+    "threshold": 0.45,
+    "method": "static",
+    "strength": 0.0,
+    "gate": null
+  },
+  "selected_1b": {
+    "threshold": 0.45,
+    "method": "static",
+    "strength": 0.0,
+    "gate": null
+  },
+  "evaluated_configurations": [
+    "thr=0.35|static|str=0|gate=none",
+    "thr=0.45|static|str=0|gate=none",
+    "thr=0.45|temporal_original|str=0.2|gate=none"
+  ]
+}

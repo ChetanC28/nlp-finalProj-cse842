@@ -1,0 +1,20 @@
+{
+  "words_in_embeddings": 2343,
+  "words_in_committed_split": 2343,
+  "words_in_effective_split": 2342,
+  "missing_from_embeddings": [
+    {
+      "lemma": "jock",
+      "split": "train"
+    }
+  ],
+  "without_split_assignment": [
+    "Jock"
+  ],
+  "effective_split_counts": {
+    "train": 1873,
+    "test": 235,
+    "dev": 234
+  },
+  "policy": "Keep existing assignments; exclude unavailable or unassigned words; do not regenerate splits or touch embeddings"
+}

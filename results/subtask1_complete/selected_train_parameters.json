@@ -1,0 +1,6 @@
+{
+  "baseline_threshold": 0.35,
+  "train_tuned_threshold": 0.45,
+  "strength_for_subtask_1a": 0.0,
+  "strength_for_subtask_1b": 0.2
+}
