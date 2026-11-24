@@ -14,9 +14,9 @@ What we did, why, and what we noticed but didn't change. Update as we go.
 - Each `.jsonl` file = one word; each line = one sentence with `lemma`, `sense_id`, `year`, `start`, `end`, `text`.
 
 **Noticed, not changed:**
-- Sentence counts are roughly equal per period (~10 per sense), **not** proportional to the true sense frequency in `metadata/`. So trajectories built from our predictions mostly show whether a sense exists in a period, not how common it is.
+- Sentence counts per (sense, period) follow the true frequency in `metadata/` in **order** (Spearman 0.89) but are heavily **compressed**: on average roughly log₂(frequency), noisy, capped at 30. E.g. frequency 100–1,000 → ~8 sentences, 10,000+ → ~21. Frequency 0 → almost always no sentences, but 78 sense-period pairs (997 sentences) have sentences where the metadata says frequency 0 (e.g. `paragraph_vb01-31872348` in 1810–1850), so data and metadata don't fully agree. So trajectories from our predictions do show how common a sense is, but on a log-like scale: a 100× change looks like ~2–3×. (Our guess at why: proportional sampling would leave rare senses with almost no sentences. Check the dataset paper.)
 - 2,346 files but 2,344 words with sentences: `honk.jsonl` and `pinheaded.jsonl` are empty (0 sentences).
-- `Jack` (27 senses, proper noun) and `jack` (12 senses) are separate words in separate files; kept separate.
+- `Jack` (proper noun, in folder `27_senses` but only 26 senses have sentences) and `jack` (12 senses) are separate words in separate files; kept separate.
 
 ## Loading (`src/load_data.py`)
 
@@ -41,8 +41,9 @@ Why: XL-LEXEME marks the word at `start:end`, so a wrong pointer gives a wrong v
 - When fixing, we take the first match in the sentence, which is occasionally wrong (`go` matched "got" instead of "gō").
 - Duplicates (not removed yet):
   - 57 fully identical rows, e.g. `French`: "To French a Leg of Mutton." (1810) appears twice.
-  - 213 sentences reused across years with the same sense, e.g. "The Anglo-Roman Church." in 1810, 1870, 1890, 1910, 1930. Harmless.
-  - 29 sentences labeled with **two different senses**, e.g. `bot`: "Bots." is both `bot_nn01-16381146` and `bot_nn01-16381258`. No context to tell them apart, so no model can get these right.
+  - 192 sentence texts reused across years with the same sense, e.g. "The Anglo-Roman Church." in 1810, 1870, 1890, 1910, 1930. Harmless. (21 more repeat within the same year with different start/end.)
+  - 29 sentence texts (62 rows) labeled with **two different senses**, e.g. `bot`: "Bots." is both `bot_nn01-16381146` and `bot_nn01-16381258`. No context to tell them apart, so no model can get these right.
+  - All counts above are on the raw data, before cleaning.
 
 ## Split (`src/split.py`)
 
@@ -108,7 +109,7 @@ Simplest working version, no year information. This is the number our temporal m
 - Train ≈ dev ≈ test: only one setting (the cutoff), so no overfitting; the number carries over to unseen words.
 - Our temporal method targets exactly these borderline false YES answers, so if it works, **precision should go up**.
 
-**Coverage:** every dev/test word and sentence takes part, but senses with ≤ k sentences are never the target (128 of 1,239 dev senses, 123 of 1,187 test senses ≈ 10%). These are the rarest senses. Their sentences are still scored as NO cases for other senses. The k example sentences of each case are not scored.
+**Coverage:** every dev/test sentence takes part, and every word except 1 dev word (all its senses are too small to be a target). Senses with ≤ k sentences are never the target (128 of 1,239 dev senses, 123 of 1,187 test senses ≈ 10%). These are the rarest senses. Their sentences are still scored as NO cases for other senses. The k example sentences of each case are not scored.
 
 **Noticed, not changed:**
 -  most answers are NO, so accuracy looks better than the model is. Report F1 as the main metric.
@@ -127,6 +128,6 @@ Open questions to answer (and say in the report):
 - What k (number of example sentences) and why? Trade-off: larger k = better reference but more rare senses skipped.
 - Does the year information raise precision without lowering recall?
 - Does it help or hurt on stable vs. newly appearing vs. rare senses? (promised in the proposal)
-- Since sentence counts per period are roughly equal (see Data), can trajectories from our predictions show how common a sense is, or only whether it exists?
-- Do the 29 sentences with two different labels (e.g. "Bots.") noticeably lower the score?
+- Sentence counts are a log-compressed version of the true frequency (see Data). Does smoothing still help when big real changes look small in the data?
+- Do the 29 sentence texts with two different labels (e.g. "Bots.") noticeably lower the score?
 - Is one random pick of example sentences stable, or do scores change with a different pick?
