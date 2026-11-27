@@ -31,9 +31,9 @@ df = pd.read_parquet("cache/embeddings_sentences.parquet")
 vectors = np.load("cache/embeddings.npy")
 
 # Step 5: Subtask 1 (unsupervised sense induction & change detection)
-run_subtask1(df, vectors, split)
+# run_subtask1(df, vectors, split)
 
 # Step 6: Subtask 2 basic model (prototype + one cutoff): train on train words, score on dev and test
-# cutoff = baseline.train(df, vectors, split)
-# baseline.evaluate(df, vectors, split, "dev", cutoff)
-# baseline.evaluate(df, vectors, split, "test", cutoff)
+cutoff = baseline.train(df, vectors, split)
+baseline.evaluate(df, vectors, split, "dev", cutoff)
+baseline.evaluate(df, vectors, split, "test", cutoff)

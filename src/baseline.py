@@ -10,8 +10,24 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
-K = 3  # PLACEHOLDER: number of example sentences per sense (decision 1, not decided yet)
-MODEL_FILE = "models/baseline.json"
+K = 3  # number of example sentences per sense (Subtask 2 decision 1)
+MODEL_FILE = "models/baseline.json"        # cutoff learned on the pretrained vectors
+FT_MODEL_FILE = "models/baseline_ft.json"  # cutoff learned on the fine-tuned vectors
+
+
+def model_file(finetuned=False):
+    return FT_MODEL_FILE if finetuned else MODEL_FILE
+
+
+def tuning_words(split, finetuned=False):
+    """Words used to pick settings (cutoff, smoothing).
+    Pretrained vectors: all train words. Fine-tuned vectors: only the held-out train words the model
+    was NOT trained on (splits/finetune_split.csv); on the others its scores look better than they are."""
+    if finetuned:
+        from src.embed import FINETUNE_SPLIT_FILE
+        parts = pd.read_csv(FINETUNE_SPLIT_FILE)
+        return parts.loc[parts["part"] == "holdout", "lemma"]
+    return split.loc[split["split"] == "train", "lemma"]
 
 
 def normalize(v):
@@ -56,17 +72,18 @@ def metrics(cases, cutoff):
     return pd.DataFrame(rows).groupby("word").mean().mean().round(3).to_dict()
 
 
-def train(df, vectors, split):
+def train(df, vectors, split, finetuned=False):
+    """finetuned=True: the vectors come from the fine-tuned model, so the cutoff is picked on the holdout words."""
     vectors = normalize(vectors.astype(np.float32))
-    train_words = split.loc[split["split"] == "train", "lemma"]
+    train_words = tuning_words(split, finetuned)
 
     cases = make_cases(df, vectors, train_words)
     cutoffs = np.round(np.arange(0, 1.01, 0.01), 2)
     best = max(cutoffs, key=lambda c: metrics(cases, c)["f1"])
-    print(f"best cutoff (train): {best} | train: {metrics(cases, best)}")
+    print(f"best cutoff ({'holdout' if finetuned else 'train'}): {best} | {metrics(cases, best)}")
 
     os.makedirs("models", exist_ok=True)
-    json.dump({"cutoff": float(best), "k": K}, open(MODEL_FILE, "w"))
+    json.dump({"cutoff": float(best), "k": K}, open(model_file(finetuned), "w"))
     return best
 
 
@@ -78,13 +95,14 @@ def evaluate(df, vectors, split, name, cutoff):
     return result
 
 
-def predict(examples, sentences):
+def predict(examples, sentences, finetuned=False):
     """examples / sentences: lists of (text, start, end).
     examples = known uses of the target sense, sentences = new uses to label."""
     from WordTransformer import WordTransformer, InputExample
+    from src.embed import FINETUNED_MODEL, MODEL_NAME
 
-    cutoff = json.load(open(MODEL_FILE))["cutoff"]
-    model = WordTransformer("pierluigic/xl-lexeme")
+    cutoff = json.load(open(model_file(finetuned)))["cutoff"]
+    model = WordTransformer(FINETUNED_MODEL if finetuned else MODEL_NAME)
     encode = lambda items: normalize(model.encode([InputExample(texts=t, positions=[s, e]) for t, s, e in items]))
 
     reference = normalize(encode(examples).mean(axis=0))
