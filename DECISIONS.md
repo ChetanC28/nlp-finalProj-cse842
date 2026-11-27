@@ -78,7 +78,7 @@ Unsupervised sense induction (1a) and diachronic sense dynamics tracking (1b).
 
 ## Subtask 2 (`src/subtask2.py`)
 
-Our method: the baseline, plus **one cutoff per period** that comes from a smoothed sense trajectory. Implemented; no full results yet.
+Our method: the baseline, plus **one cutoff per period** that comes from a smoothed sense trajectory. Implemented; dev results below (see Results).
 
 Input: `cache/embeddings.npy` + `cache/embeddings_sentences.parquet` (same row order), from the encoding step. Run: `python -m src.subtask2`. Saves the tuned settings to `models/temporal.json`.
 
@@ -131,6 +131,26 @@ Input: `cache/embeddings.npy` + `cache/embeddings_sentences.parquet` (same row o
   - Grid: σ ∈ {0, 0.5, 1, 2, 3} × adjust ∈ {0, 0.05, 0.1, 0.2, 0.3, 0.5} = 30 combinations, scored by F1 on the tuning words. Ties → the first one, i.e. least smoothing / smallest adjust.
   - Tuning words: all train words for the pretrained vectors; only the 374 holdout words for the fine-tuned vectors (`baseline.tuning_words()`, see Fine-tuning).
   - Chosen settings saved to `models/temporal.json` (pretrained) or `models/temporal_ft.json` (fine-tuned). Pretrained run picked **σ = 1, adjust = 0.3**.
+
+**Results (dev, 234 words, 1,111 word–sense cases; test not evaluated yet):**
+
+| Vectors | Method | Settings | F1 | Precision | Recall | Accuracy |
+|---|---|---|---|---|---|---|
+| pretrained | baseline | cutoff 0.74 | 0.528 | 0.482 | 0.806 | 0.673 |
+| pretrained | temporal | cutoff 0.74, σ = 1, adjust = 0.3 | 0.530 | 0.483 | 0.809 | 0.675 |
+| fine-tuned | baseline | cutoff 0.80 | 0.576 | 0.533 | 0.820 | 0.732 |
+| fine-tuned | temporal | cutoff 0.80, σ = 2, adjust = 0.3 | **0.578** | 0.534 | 0.822 | 0.734 |
+
+On the tuning words (settings picked here): pretrained = all 1,874 train words, baseline 0.537 → temporal 0.539 F1; fine-tuned = 374 holdout words, baseline 0.592 → temporal 0.594 F1.
+
+Settings from `models/baseline.json`, `models/temporal.json`, `models/baseline_ft.json`, `models/temporal_ft.json`. The scripts only print scores, so these were recomputed from the saved settings (pretrained numbers identical to the original run).
+
+**What it tells us:**
+- **Fine-tuning is the big gain:** baseline dev F1 0.528 → 0.576 (+0.048), mostly from precision (+0.051; recall +0.014). The model says YES wrongly less often, which was the baseline's main weakness.
+- **The temporal method adds only +0.002 F1**, on both vector sets. The gain comes mostly from recall (+0.002–0.003); precision barely moves (+0.001), so it does **not** yet do what we hoped (fewer false YES). Not tested for significance; a difference this small may be noise.
+- **Better vectors did not make the temporal step help more** (+0.002 either way), although their first pass is more accurate. Suggests the limit is the per-period cutoff idea on this data more than the first-pass noise; the oracle check (true trajectory instead of first pass) would confirm.
+- **Settings carry over to new words:** tuning → dev drops are small and similar (pretrained −0.009, fine-tuned −0.016), so neither is badly overfit. Fine-tuned vectors chose a stricter cutoff (0.80) and stronger smoothing (σ = 2).
+- Fine-tuned results are on the same dev words and cases as pretrained, so the rows are directly comparable.
 
 Not implemented yet: the **definition variant** (LLM-written definition instead of averaged examples). Model choice and how to turn a definition into a vector are still open.
 
